@@ -58,8 +58,7 @@ export function apply(ctx, config) {
     const modelId = agent.options?.model
     // opencode-go Flash 适配：Flash 模型一律走 weak（作者 w7 最优解），
     // 不靠关键词把构建类任务分到 react（那会走 REACT_PERSONA，偏离 Flash 最优）。
-    const mode = overrides.get(session.id)
-      ?? (isFlashModel(modelId) ? 'weak' : sessionMode(session))
+    const mode = resolveMode(session, modelId)
     const persona = personaFor(mode, modelId)
 
     // The persona stays constant for the whole session (mode is fixed); only
@@ -116,6 +115,13 @@ export function apply(ctx, config) {
     return typeof mode === 'string' ? mode : mode.toFixed(2)
   }
 
+  // 统一解析当前会话的 mode：显式 override 优先；否则 Flash 一律 weak
+  //（作者 w7 最优解），非 Flash 走关键词分类。避免各处重复遗漏 Flash 判断。
+  function resolveMode(session, modelId) {
+    return overrides.get(session.id)
+      ?? (isFlashModel(modelId) ? 'weak' : sessionMode(session))
+  }
+
   registerTool({
     name: 'dev_router_status',
     description: 'Show this session\'s reasoning-mode routing: mode, band, persona, first-turn core tools, test-suppression, and whether an override is active.',
@@ -124,8 +130,8 @@ export function apply(ctx, config) {
     execute() {
       const session = currentSession()
       if (session === undefined) return 'no agent session'
-      const mode = overrides.get(session.id) ?? sessionMode(session)
       const modelId = currentAgent()?.options?.model
+      const mode = resolveMode(session, modelId)
       return [
         `mode=${fmtMode(mode)} (band=${bandFor(mode)})`,
         `persona=${personaFor(mode, modelId).replace(/\n/g, ' / ')}`,
@@ -148,7 +154,8 @@ export function apply(ctx, config) {
       if (session === undefined) return 'no agent session'
       if (parsed === 'auto') overrides.delete(session.id)
       else overrides.set(session.id, parsed === 'weak' ? 'weak' : clamp01(parsed))
-      const current = overrides.get(session.id) ?? sessionMode(session)
+      const modelId = currentAgent()?.options?.model
+      const current = resolveMode(session, modelId)
       return `mode=${fmtMode(current)} (band=${bandFor(current)}) — next request applies`
     },
   })
