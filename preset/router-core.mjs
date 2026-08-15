@@ -111,7 +111,6 @@ export function bandFor(mode) {
 }
 
 /** Test-suppression strength for a mode (informational). */
-/** Test-suppression strength for a mode (informational). */
 export function testinessFor(mode) {
   switch (bandOf(mode)) {
     case 'react': return 'suppressed'

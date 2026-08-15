@@ -20,7 +20,7 @@
  */
 
 import {
-  applyPersona, bandOf, bandFor, coreFor, parseMode, personaFor, sessionMode, testinessFor, clamp01,
+  applyPersona, bandFor, coreFor, parseMode, personaFor, sessionMode, testinessFor, clamp01,
   isFlashModel,
 } from './router-core.mjs'
 
