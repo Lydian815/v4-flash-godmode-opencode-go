@@ -34,10 +34,7 @@ export function apply(ctx, config) {
     if (agent === undefined) return assembled
     const session = agent.session
 
-    // 用会话的真实模型（requestHeader 优先，options 兜底）——
-    // agent.options 是创建时快照，会话内切换模型后不更新，会导致
-    // 路由按旧模型判定（实测 bug：pro 会话被当作 flash 走 weak）。
-    const modelId = session.requestHeader?.()?.config?.model ?? agent.options?.model
+    const modelId = agent.options?.model
     // Flash 模型一律走 weak（作者 w7 最优解）；非 Flash 走关键词分类。
     const mode = overrides.get(session.id)
       ?? (isFlashModel(modelId) ? 'weak' : sessionMode(session))

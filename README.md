@@ -1,6 +1,59 @@
 # V4 Flash 神模式 (opencode-go)
 
 > 让 **opencode-go 的 DeepSeek V4 Flash** 从「鬼模式」切换到「神模式」的 dsh agent preset。
+>
+> **升级（回灌切断）**：本 preset 配合对 `@earendil-works/pi-ai` 的 patch，
+> 切断 opencode-go 网关的思维链回灌（见下文「回灌切断」），避免历史
+> "Let me…" 链与未装 preset 的旧对话污染智力。
+
+## 回灌切断（升级核心）
+
+opencode-go 网关经 pi-ai 适配层时，`deepseek-v4-flash` 声明
+`compat.requiresReasoningContentOnAssistantMessages: true` —— 历史上每一轮
+的思维链全文会被作为 `reasoning_content` 回灌给模型。后果：模型看到自己
+上一轮的 "Let me…" 长链，模仿并延续 → 语域逐轮漂移；没装 preset 的旧对话
+也会回灌污染。
+
+**修复**（`@earendil-works/pi-ai/dist/api/openai-completions.js`，provider 级，
+opencode-go 全覆盖，flash + pro 均生效）：
+
+```js
+if (nonEmptyThinkingBlocks.length > 0 && model.provider !== "opencode-go") {
+```
+
+- opencode-go 的 assistant 消息不再回灌思维链文本；
+- `reasoning_content: ""` 空串仍发送（满足网关字段要求）；
+- 思维链仍存储并显示在 UI（Think 块不变），只是不再喂回给模型；
+- wire 实测：空串回灌 → "我们需要/We need/Let's" 语域稳定；全文回灌 →
+  漂移为 "Let me…"。
+
+> ⚠️ 这是对 npm 全局包（`@earendil-works/pi-ai`）的 patch，升级 dsh/pi-ai
+> 会被覆盖，需重打。
+
+## 长思考引导（deepThinking，回灌切断配套）
+
+**为什么需要**：切断回灌后，flash 模型失去"看到自己历史长链"的激励，思考
+会变浅（实测：同一建模题，思考总量 245K→110K 字符、建模质量 30→24/30）。
+**本 preset 提供 `deepThinking` 开关**，用**显式 persona 指令**替代回灌激励，
+把思考深度拉回，同时保持 let me 语域干净：
+
+```yaml
+# agent.cordis.yml → router-bootstrap 行
+config:
+  deepThinking: true   # false/删除 → 经典 w7
+```
+
+`deepThinking: true` 使用 `WEAK_FLASH_DEEP` persona，显式要求五阶段推演：
+
+1. **Scope** — 明确问题、目标、假设；
+2. **Model** — 从第一性原理推导全部方程/步骤；
+3. **Challenge** — 主动 red-team 自己的结论（物理合理性、边界、单位、符号）；
+4. **Cross-check** — 用独立方法复核关键数值；
+5. **Conclude** — 给出带具体数字的结论，说明不确定性，停止。
+
+同时内置反空转锚（"Do not narrate your reasoning as 'Let me…' chatter"）。
+实测定位：`deepThinking:false`（经典 w7）= 短思考、干净语域；
+`deepThinking:true` = 长思考、干净语域、质量回满。
 
 ## 这是什么
 
