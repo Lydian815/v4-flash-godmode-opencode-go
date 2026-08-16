@@ -55,6 +55,20 @@ config:
 实测定位：`deepThinking:false`（经典 w7）= 短思考、干净语域；
 `deepThinking:true` = 长思考、干净语域、质量回满。
 
+## 评测数据（Flash 三态对比，煮沸水建模题）
+
+| 组合 | 思考字符 | Let me | 效率(答/思) | 建模总分 |
+|---|---|---|---|---|
+| 标准 opencode flash | 121,509 | 97 | 12.5% | 79 |
+| **Router Flash（切断回灌，浅思考）** | 110,823 | 85 | 14.6% | 81 |
+| Router Flash（未切断回灌） | 245,011 | 154 | 8.2% | 86 |
+| **Router Flash Deep（切断 + 长思考）** | 105,387 | 83 | 14.6% | **91** |
+
+**结论**：`deepThinking:true` 用更少的思考（105K vs 245K）拿到同等的深度
+（13/14），语域更干净（83 vs 154 let me），总分最高（91）——五阶段 persona
+完全替代了回灌的激励作用，同时避免了 let me 污染。**Flash 推荐直接用 Deep
+变体（preset-deep/）。**
+
 ## 这是什么
 
 一个 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（dsh）的 agent preset。它把 [dsh-router-standard](https://github.com/yjh051108/dsh-router-standard) 研究里为 **Flash** 标定的最优引导（w7 persona + 深度思考锚）适配到 **opencode-go provider 的 `deepseek-v4-flash`** 上。
